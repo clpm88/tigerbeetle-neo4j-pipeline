@@ -1,1 +1,0 @@
-Note: The Redpanda broker for the Go apps will be localhost:19092
