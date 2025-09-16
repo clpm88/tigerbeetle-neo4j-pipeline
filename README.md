@@ -238,17 +238,16 @@ To make changes to the services:
 2. Rebuild: `go build -o bin/<service> ./cmd/<service>`
 3. Restart the specific service
 
-## Roadmap
+## Future Development
 
-See [ROADMAP.md](ROADMAP.md) for detailed development plans including:
-- Monitoring infrastructure completion
-- V2 e-commerce web UI implementation
-- PostHog analytics integration
-- Advanced graph algorithms and ML features
+This project serves as a foundation for advanced financial analytics and e-commerce applications. Planned enhancements include:
+- Complete monitoring infrastructure (TigerBeetle, Redpanda, Neo4j metrics)
+- V2 e-commerce web UI with simulated transactions
+- PostHog analytics integration for user behavior tracking
+- Advanced graph algorithms and machine learning features
 
 ## Project Documentation
 
-- [ROADMAP.md](ROADMAP.md) - Development roadmap and next steps
 - [docs/posthog-integration.md](docs/posthog-integration.md) - PostHog analytics planning
 - [WARP.md](WARP.md) - Comprehensive project guide for AI development
 
