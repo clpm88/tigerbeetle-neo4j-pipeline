@@ -1,4 +1,4 @@
-.PHONY: help build run-generator run-cdc run-sink setup-infra create-topic clean
+.PHONY: help build run-generator run-cdc run-sink setup-infra create-topic clean monitoring monitoring-up monitoring-down
 
 # Default target
 help:
@@ -9,6 +9,9 @@ help:
 	@echo "  run-sink       - Run the Neo4j sink"
 	@echo "  setup-infra    - Format TigerBeetle and start infrastructure"
 	@echo "  create-topic   - Create the Redpanda transactions topic"
+	@echo "  monitoring     - Start monitoring stack (Prometheus + Grafana)"
+	@echo "  monitoring-up  - Start monitoring stack"
+	@echo "  monitoring-down- Stop monitoring stack"
 	@echo "  clean          - Stop infrastructure and remove volumes"
 
 # Create bin directory
@@ -44,6 +47,20 @@ setup-infra:
 # Create Redpanda topic
 create-topic:
 	docker exec redpanda rpk topic create transactions --partitions 3 --replicas 1
+
+# Monitoring
+monitoring: monitoring-up
+
+monitoring-up:
+	@echo "Starting monitoring stack..."
+	docker compose up -d prometheus grafana
+	@echo "Monitoring available at:"
+	@echo "  Prometheus: http://localhost:9090"
+	@echo "  Grafana:    http://localhost:3001 (admin/admin)"
+
+monitoring-down:
+	@echo "Stopping monitoring stack..."
+	docker compose stop prometheus grafana
 
 # Clean up
 clean:

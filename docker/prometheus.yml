@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Go services (when we add metrics endpoints)
+  - job_name: 'generator'
+    static_configs:
+      - targets: ['host.docker.internal:8081']  # We'll add metrics endpoint to generator
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  - job_name: 'cdc-connector'
+    static_configs:
+      - targets: ['host.docker.internal:8082']  # We'll add metrics endpoint to CDC connector
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  - job_name: 'neo4j-sink'
+    static_configs:
+      - targets: ['host.docker.internal:8083']  # We'll add metrics endpoint to Neo4j sink
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Redpanda JMX metrics (we'll configure this)
+  - job_name: 'redpanda'
+    static_configs:
+      - targets: ['redpanda:9644']  # Admin API port
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # TigerBeetle (we'll need to research how to expose metrics)
+  # - job_name: 'tigerbeetle'
+  #   static_configs:
+  #     - targets: ['tigerbeetle:3001']  # If TigerBeetle exposes metrics
+  #   metrics_path: /metrics
+  #   scrape_interval: 30s

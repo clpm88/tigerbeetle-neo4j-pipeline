@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"tigerbeetle-neo4j/pkg/config"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	tb "github.com/tigerbeetle/tigerbeetle-go"
 	"github.com/tigerbeetle/tigerbeetle-go/pkg/types"
 )
@@ -17,11 +20,53 @@ const (
 	Ledger      = 1
 )
 
+// Prometheus metrics
+var (
+	transfersGenerated = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tigerbeetle_transfers_generated_total",
+			Help: "Total number of transfers generated",
+		},
+		[]string{"status"}, // success, error
+	)
+	
+	transferAmount = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "tigerbeetle_transfer_amount_dollars",
+			Help:    "Distribution of transfer amounts in dollars",
+			Buckets: prometheus.LinearBuckets(0, 100, 11), // 0-1000 in 100 dollar buckets
+		},
+	)
+	
+	accountsCreated = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "tigerbeetle_accounts_created_total",
+			Help: "Total number of accounts created",
+		},
+	)
+)
+
+func init() {
+	// Register metrics
+	prometheus.MustRegister(transfersGenerated)
+	prometheus.MustRegister(transferAmount)
+	prometheus.MustRegister(accountsCreated)
+}
+
 func main() {
 	cfg := config.Load()
 	
 	log.Printf("Starting Transaction Generator...")
 	log.Printf("TigerBeetle Address: %s", cfg.TigerBeetle.Address)
+	
+	// Start metrics HTTP server
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("Starting metrics server on :8081")
+		if err := http.ListenAndServe(":8081", nil); err != nil {
+			log.Printf("Metrics server failed: %v", err)
+		}
+	}()
 
 	// Connect to TigerBeetle
 	clusterID := types.ToUint128(0) // Cluster ID 0 for single node
@@ -69,11 +114,15 @@ func main() {
 		results, err := client.CreateTransfers([]types.Transfer{transfer})
 		if err != nil {
 			log.Printf("ERROR: Failed to create transfer %d: %v", transferID, err)
+			transfersGenerated.WithLabelValues("error").Inc()
 		} else if len(results) > 0 {
 			log.Printf("ERROR: Transfer %d failed with result: %v", transferID, results[0])
+			transfersGenerated.WithLabelValues("error").Inc()
 		} else {
 			log.Printf("SUCCESS: Transfer %d - $%d from account %d to account %d", 
 				transferID, amount, fromAccount, toAccount)
+			transfersGenerated.WithLabelValues("success").Inc()
+			transferAmount.Observe(float64(amount))
 		}
 
 		transferID++
@@ -126,6 +175,9 @@ func createAccounts(client tb.Client) error {
 	
 	log.Printf("Found %d existing accounts, creating %d new accounts", 
 		len(existingAccounts), len(accountsToCreate))
+	
+	// Update accounts created metric
+	accountsCreated.Set(float64(len(existingAccounts) + len(accountsToCreate)))
 	
 	// Create only the missing accounts
 	if len(accountsToCreate) > 0 {
