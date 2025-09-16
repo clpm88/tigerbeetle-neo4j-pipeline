@@ -16,6 +16,8 @@ The system consists of three independent Go microservices:
 - **Transactional Database:** TigerBeetle
 - **Streaming Platform:** Redpanda (Kafka-compatible)
 - **Graph Database:** Neo4j AuraDB or local Neo4j
+- **Monitoring:** Prometheus & Grafana
+- **Analytics Planning:** PostHog integration
 - **Orchestration:** Docker and Docker Compose
 
 ## Prerequisites
@@ -129,6 +131,43 @@ All services can be configured using environment variables:
 - `NEO4J_USERNAME`: Neo4j username (default: "neo4j")
 - `NEO4J_PASSWORD`: Neo4j password (default: "password")
 
+## Monitoring
+
+The system includes comprehensive monitoring with Prometheus and Grafana:
+
+### Start Monitoring Stack
+
+```bash
+# Start Prometheus and Grafana
+make monitoring
+
+# Or manually:
+docker compose up -d prometheus grafana
+```
+
+### Access Monitoring Interfaces
+
+- **Prometheus**: http://localhost:9090 - Metrics collection and querying
+- **Grafana**: http://localhost:3001 - Dashboards and visualization (admin/admin)
+
+### Available Metrics
+
+**Transaction Generator**:
+- `tigerbeetle_transfers_generated_total` - Total transfers by status (success/error)
+- `tigerbeetle_transfer_amount_dollars` - Distribution of transfer amounts
+- `tigerbeetle_accounts_created_total` - Total accounts in system
+
+**System Metrics**:
+- Go runtime metrics (memory, goroutines, GC)
+- HTTP request metrics for each service
+- Custom business logic metrics
+
+### Metrics Endpoints
+
+- Generator: http://localhost:8081/metrics
+- CDC Connector: http://localhost:8082/metrics (planned)
+- Neo4j Sink: http://localhost:8083/metrics (planned)
+
 ## Using Neo4j AuraDB
 
 To use Neo4j AuraDB instead of local Neo4j:
@@ -198,6 +237,20 @@ To make changes to the services:
 1. Modify the Go code
 2. Rebuild: `go build -o bin/<service> ./cmd/<service>`
 3. Restart the specific service
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for detailed development plans including:
+- Monitoring infrastructure completion
+- V2 e-commerce web UI implementation
+- PostHog analytics integration
+- Advanced graph algorithms and ML features
+
+## Project Documentation
+
+- [ROADMAP.md](ROADMAP.md) - Development roadmap and next steps
+- [docs/posthog-integration.md](docs/posthog-integration.md) - PostHog analytics planning
+- [WARP.md](WARP.md) - Comprehensive project guide for AI development
 
 ## Stopping
 
