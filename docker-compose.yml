@@ -4,11 +4,12 @@ services:
   # TigerBeetle Database
   tigerbeetle:
     image: ghcr.io/tigerbeetle/tigerbeetle:latest
+    privileged: true
     ports:
       - "3000:3000"
     volumes:
       - tigerbeetle_data:/data
-    command: ["start", "--addresses=0.0.0.0:3000", "/data/tigerbeetle.tigerbeetle"]
+    command: ["start", "--addresses=0.0.0.0:3000", "--development", "/data/tigerbeetle.tigerbeetle"]
     healthcheck:
       test: ["CMD-SHELL", "echo 'health check' || exit 1"]
       interval: 30s
@@ -59,29 +60,30 @@ services:
     volumes:
       - ./docker/redpanda-console-config.yml:/tmp/config.yml
 
-  # Neo4j Database (optional - you can use Neo4j AuraDB instead)
-  neo4j:
-    image: neo4j:5.15
-    ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    environment:
-      NEO4J_AUTH: neo4j/password
-      NEO4J_PLUGINS: '["apoc"]'
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
-      NEO4J_dbms_security_procedures_allowlist: apoc.*
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7474/db/data/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+  # Neo4j Database (commented out - using Neo4j AuraDB instead)
+  # Uncomment this section if you want to use local Neo4j instead of AuraDB
+  # neo4j:
+  #   image: neo4j:5.15
+  #   ports:
+  #     - "7474:7474"  # HTTP
+  #     - "7687:7687"  # Bolt
+  #   volumes:
+  #     - neo4j_data:/data
+  #     - neo4j_logs:/logs
+  #   environment:
+  #     NEO4J_AUTH: neo4j/password
+  #     NEO4J_PLUGINS: '["apoc"]'
+  #     NEO4J_dbms_security_procedures_unrestricted: apoc.*
+  #     NEO4J_dbms_security_procedures_allowlist: apoc.*
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:7474/db/data/ || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 40s
 
 volumes:
   tigerbeetle_data:
   redpanda_data:
-  neo4j_data:
-  neo4j_logs:
+  # neo4j_data:  # Commented out since using AuraDB
+  # neo4j_logs:  # Commented out since using AuraDB

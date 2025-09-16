@@ -34,9 +34,9 @@ run-sink: bin/neo4j-sink
 # Infrastructure setup
 setup-infra:
 	@echo "Formatting TigerBeetle database..."
-	docker run --rm -v tigerbeetle-neo4j_tigerbeetle_data:/data ghcr.io/tigerbeetle/tigerbeetle:latest format --cluster=0 --replica=0 /data/tigerbeetle.tigerbeetle
+	docker run --privileged --rm -v tigerbeetle-neo4j_tigerbeetle_data:/data ghcr.io/tigerbeetle/tigerbeetle:latest format --development --cluster=0 --replica=0 --replica-count=1 /data/tigerbeetle.tigerbeetle
 	@echo "Starting infrastructure..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "Waiting for services to be ready..."
 	@sleep 10
 	@echo "Infrastructure is ready!"
@@ -47,7 +47,7 @@ create-topic:
 
 # Clean up
 clean:
-	docker-compose down -v
+	docker compose down -v
 	rm -rf bin/
 
 # Ensure individual binaries exist

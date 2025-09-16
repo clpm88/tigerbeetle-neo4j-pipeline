@@ -41,7 +41,8 @@ func main() {
 	log.Printf("Created %d accounts", NumAccounts)
 
 	// Generate transfers in infinite loop
-	transferID := uint64(1)
+	// Use timestamp as base to ensure unique IDs across runs
+	transferID := uint64(time.Now().Unix())
 	
 	for {
 		// Generate random transfer
@@ -81,33 +82,61 @@ func main() {
 }
 
 func createAccounts(client tb.Client) error {
-	accounts := make([]types.Account, NumAccounts)
-	
+	// First, check which accounts already exist
+	accountIDs := make([]types.Uint128, NumAccounts)
 	for i := 0; i < NumAccounts; i++ {
-		accounts[i] = types.Account{
-			ID:           types.ToUint128(uint64(i + 1)),
-			DebitsPending:  types.ToUint128(0),
-			DebitsPosted:   types.ToUint128(0),
-			CreditsPending: types.ToUint128(0),
-			CreditsPosted:  types.ToUint128(0),
-			UserData128:    types.ToUint128(0),
-			UserData64:     0,
-			UserData32:     0,
-			Reserved:       0,
-			Ledger:         Ledger,
-			Code:           1, // Account code
-			Flags:          0,
-			Timestamp:      0,
+		accountIDs[i] = types.ToUint128(uint64(i + 1))
+	}
+	
+	existingAccounts, err := client.LookupAccounts(accountIDs)
+	if err != nil {
+		return fmt.Errorf("failed to lookup existing accounts: %w", err)
+	}
+	
+	// Create a set of existing account IDs for quick lookup
+	existingIDs := make(map[string]bool)
+	for _, account := range existingAccounts {
+		id := account.ID.String()
+		existingIDs[id] = true
+	}
+	
+	// Only create accounts that don't exist
+	var accountsToCreate []types.Account
+	for i := 0; i < NumAccounts; i++ {
+		accountID := uint64(i + 1)
+		accountIDStr := types.ToUint128(accountID).String()
+		if !existingIDs[accountIDStr] {
+			accountsToCreate = append(accountsToCreate, types.Account{
+				ID:             types.ToUint128(accountID),
+				DebitsPending:  types.ToUint128(0),
+				DebitsPosted:   types.ToUint128(0),
+				CreditsPending: types.ToUint128(0),
+				CreditsPosted:  types.ToUint128(0),
+				UserData128:    types.ToUint128(0),
+				UserData64:     0,
+				UserData32:     0,
+				Reserved:       0,
+				Ledger:         Ledger,
+				Code:           1, // Account code
+				Flags:          0,
+				Timestamp:      0,
+			})
 		}
 	}
-
-	results, err := client.CreateAccounts(accounts)
-	if err != nil {
-		return fmt.Errorf("create accounts error: %w", err)
-	}
 	
-	if len(results) > 0 {
-		return fmt.Errorf("account creation failed with results: %v", results)
+	log.Printf("Found %d existing accounts, creating %d new accounts", 
+		len(existingAccounts), len(accountsToCreate))
+	
+	// Create only the missing accounts
+	if len(accountsToCreate) > 0 {
+		results, err := client.CreateAccounts(accountsToCreate)
+		if err != nil {
+			return fmt.Errorf("create accounts error: %w", err)
+		}
+		
+		if len(results) > 0 {
+			return fmt.Errorf("account creation failed with results: %v", results)
+		}
 	}
 
 	return nil
